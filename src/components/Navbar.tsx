@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
+  const router = useRouter();
+
+  function handleLogout() {
+    logout();
+    router.push("/");
+  }
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-brand-dark/80 backdrop-blur-md border-b border-white/10">
@@ -30,15 +39,29 @@ export default function Navbar() {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-300 hover:text-white transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link href="/dashboard" className="btn-primary text-sm py-2 px-4">
-            Get Started
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="text-sm text-gray-300">{user?.name}</span>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link href="/register" className="btn-primary text-sm py-2 px-4">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -96,9 +119,25 @@ export default function Navbar() {
           >
             Blog
           </Link>
-          <Link href="/dashboard" className="btn-primary block text-center">
-            Get Started
-          </Link>
+          {isAuthenticated ? (
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                handleLogout();
+              }}
+              className="btn-secondary block w-full text-center"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/register"
+              className="btn-primary block text-center"
+              onClick={() => setMenuOpen(false)}
+            >
+              Get Started
+            </Link>
+          )}
         </div>
       )}
     </nav>

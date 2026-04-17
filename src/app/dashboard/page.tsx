@@ -1,35 +1,38 @@
 "use client";
 
-const accounts = [
-  { name: "@creativestudio", followers: "124K", status: "connected" },
-  { name: "@brandofficial", followers: "89K", status: "connected" },
-  { name: "@personalpage", followers: "32K", status: "pending" },
-];
-
-const scheduledPosts = [
-  {
-    account: "@creativestudio",
-    caption: "Behind the scenes of our latest shoot 🎬",
-    scheduledFor: "Today at 6:00 PM",
-    status: "scheduled",
-  },
-  {
-    account: "@brandofficial",
-    caption: "New product drop — don't miss it! 🔥",
-    scheduledFor: "Tomorrow at 9:00 AM",
-    status: "scheduled",
-  },
-  {
-    account: "@personalpage",
-    caption: "My morning routine that changed my life ✨",
-    scheduledFor: "Apr 17 at 3:00 PM",
-    status: "draft",
-  },
-];
+import { useEffect, useState } from "react";
+import { getAccounts, getPosts, Account, Post } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 const calendarDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getAccounts(), getPosts()])
+      .then(([accs, ps]) => {
+        setAccounts(accs);
+        setPosts(ps);
+      })
+      .catch(() => {
+        // leave empty on error — empty states are shown below
+      })
+      .finally(() => setLoadingData(false));
+  }, []);
+
+  const scheduledPosts = posts.filter((p) => p.status === "scheduled");
+  const postsThisWeek = posts.filter((p) => {
+    if (!p.scheduledFor) return false;
+    const d = new Date(p.scheduledFor);
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return d >= weekAgo && d <= now;
+  });
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
@@ -37,7 +40,8 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Welcome back! Here&apos;s your content overview.
+            {user ? `Welcome back, ${user.name}!` : "Welcome back!"}{" "}
+            Here&apos;s your content overview.
           </p>
         </div>
         <button className="btn-primary text-sm">+ New Post</button>
@@ -46,10 +50,26 @@ export default function DashboardPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Connected Accounts", value: "3", icon: "🔗" },
-          { label: "Scheduled Posts", value: "12", icon: "📅" },
-          { label: "Posts This Week", value: "8", icon: "📤" },
-          { label: "Total Followers", value: "245K", icon: "👥" },
+          {
+            label: "Connected Accounts",
+            value: loadingData ? "…" : String(accounts.length),
+            icon: "🔗",
+          },
+          {
+            label: "Scheduled Posts",
+            value: loadingData ? "…" : String(scheduledPosts.length),
+            icon: "📅",
+          },
+          {
+            label: "Posts This Week",
+            value: loadingData ? "…" : String(postsThisWeek.length),
+            icon: "📤",
+          },
+          {
+            label: "Total Posts",
+            value: loadingData ? "…" : String(posts.length),
+            icon: "👥",
+          },
         ].map((stat) => (
           <div key={stat.label} className="glass-card p-4">
             <div className="text-2xl mb-2">{stat.icon}</div>
@@ -67,7 +87,12 @@ export default function DashboardPage() {
             <button className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg">
               ← Prev
             </button>
-            <span className="text-sm text-gray-300 px-3 py-1">April 2026</span>
+            <span className="text-sm text-gray-300 px-3 py-1">
+              {new Date().toLocaleString("default", {
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
             <button className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg">
               Next →
             </button>
@@ -85,10 +110,16 @@ export default function DashboardPage() {
             </div>
           ))}
           {Array.from({ length: 35 }, (_, i) => {
-            const dayNum = i - 1; // offset so 1 = Monday
+            const dayNum = i - 1;
             const date = dayNum >= 0 && dayNum < 30 ? dayNum + 1 : null;
-            const hasPost = date && [3, 7, 10, 14, 17, 21].includes(date);
-            const isToday = date === 15;
+            const today = new Date().getDate();
+            const hasPost = date
+              ? posts.some((p) => {
+                  if (!p.scheduledFor) return false;
+                  return new Date(p.scheduledFor).getDate() === date;
+                })
+              : false;
+            const isToday = date === today;
             return (
               <div
                 key={i}
@@ -121,35 +152,49 @@ export default function DashboardPage() {
               + Add Account
             </button>
           </div>
-          <div className="space-y-3">
-            {accounts.map((account) => (
-              <div
-                key={account.name}
-                className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold">
-                    {account.name[1].toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{account.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {account.followers} followers
+          {loadingData ? (
+            <p className="text-gray-500 text-sm">Loading accounts…</p>
+          ) : accounts.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              No accounts connected yet. Click &quot;+ Add Account&quot; to get started.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {accounts.map((account) => (
+                <div
+                  key={account.id}
+                  className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold">
+                      {account.username?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">
+                        @{account.username}
+                      </div>
+                      {account.followersCount != null && (
+                        <div className="text-xs text-gray-400">
+                          {account.followersCount.toLocaleString()} followers
+                        </div>
+                      )}
                     </div>
                   </div>
+                  {account.status && (
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        account.status === "connected"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-yellow-500/20 text-yellow-400"
+                      }`}
+                    >
+                      {account.status}
+                    </span>
+                  )}
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    account.status === "connected"
-                      ? "bg-green-500/20 text-green-400"
-                      : "bg-yellow-500/20 text-yellow-400"
-                  }`}
-                >
-                  {account.status}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Scheduled Posts */}
@@ -160,28 +205,46 @@ export default function DashboardPage() {
               View All
             </button>
           </div>
-          <div className="space-y-3">
-            {scheduledPosts.map((post, idx) => (
-              <div key={idx} className="p-3 bg-white/5 rounded-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-purple-400 font-medium">
-                    {post.account}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      post.status === "scheduled"
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "bg-gray-500/20 text-gray-400"
-                    }`}
-                  >
-                    {post.status}
-                  </span>
+          {loadingData ? (
+            <p className="text-gray-500 text-sm">Loading posts…</p>
+          ) : scheduledPosts.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              No scheduled posts yet. Create your first post!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {scheduledPosts.map((post) => (
+                <div key={post.id} className="p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-purple-400 font-medium">
+                      {post.accountId ?? "Unknown account"}
+                    </span>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        post.status === "scheduled"
+                          ? "bg-blue-500/20 text-blue-400"
+                          : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {post.status}
+                    </span>
+                  </div>
+                  {post.caption && (
+                    <p className="text-sm text-gray-300 mb-1">{post.caption}</p>
+                  )}
+                  {post.scheduledFor && (
+                    <p className="text-xs text-gray-500">
+                      🕐{" "}
+                      {new Date(post.scheduledFor).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  )}
                 </div>
-                <p className="text-sm text-gray-300 mb-1">{post.caption}</p>
-                <p className="text-xs text-gray-500">🕐 {post.scheduledFor}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
