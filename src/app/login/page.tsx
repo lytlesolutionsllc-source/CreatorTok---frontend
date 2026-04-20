@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
@@ -21,8 +22,10 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/dashboard");
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Invalid email or password.";
+      const fallback = "Invalid email or password.";
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.message || err.response?.data?.error || err.message || fallback)
+        : (err instanceof Error ? err.message : fallback);
       setError(msg);
     } finally {
       setLoading(false);
