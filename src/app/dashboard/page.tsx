@@ -1,16 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAccounts, getPosts, Account, Post } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const calendarDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+function getFirstDayOfMonth(year: number, month: number) {
+  const day = new Date(year, month, 1).getDay();
+  return (day + 6) % 7;
+}
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  const today = new Date();
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
 
   useEffect(() => {
     Promise.all([getAccounts(), getPosts()])
@@ -33,6 +48,19 @@ export default function DashboardPage() {
     return d >= weekAgo && d <= now;
   });
 
+  function prevMonth() {
+    if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); }
+    else setCalMonth((m) => m - 1);
+  }
+  function nextMonth() {
+    if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); }
+    else setCalMonth((m) => m + 1);
+  }
+
+  const firstDay = getFirstDayOfMonth(calYear, calMonth);
+  const daysInMonth = getDaysInMonth(calYear, calMonth);
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
@@ -44,7 +72,7 @@ export default function DashboardPage() {
             Here&apos;s your content overview.
           </p>
         </div>
-        <button className="btn-primary text-sm">+ New Post</button>
+        <button className="btn-primary text-sm" onClick={() => router.push("/dashboard/scheduled")}>+ New Post</button>
       </div>
 
       {/* Stats Row */}
@@ -84,16 +112,22 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">Content Calendar</h2>
           <div className="flex gap-2">
-            <button className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg">
+            <button
+              onClick={prevMonth}
+              className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg"
+            >
               ← Prev
             </button>
             <span className="text-sm text-gray-300 px-3 py-1">
-              {new Date().toLocaleString("default", {
+              {new Date(calYear, calMonth).toLocaleString("default", {
                 month: "long",
                 year: "numeric",
               })}
             </span>
-            <button className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg">
+            <button
+              onClick={nextMonth}
+              className="text-gray-400 hover:text-white transition-colors px-3 py-1 text-sm border border-white/10 rounded-lg"
+            >
               Next →
             </button>
           </div>
@@ -109,28 +143,38 @@ export default function DashboardPage() {
               {day}
             </div>
           ))}
-          {Array.from({ length: 35 }, (_, i) => {
-            const dayNum = i - 1;
-            const date = dayNum >= 0 && dayNum < 30 ? dayNum + 1 : null;
-            const today = new Date().getDate();
-            const hasPost = date
+          {Array.from({ length: totalCells }, (_, i) => {
+            const dayNum = i - firstDay + 1;
+            const isValid = dayNum >= 1 && dayNum <= daysInMonth;
+            const todayDate = today.getDate();
+            const isToday =
+              isValid &&
+              dayNum === todayDate &&
+              calMonth === today.getMonth() &&
+              calYear === today.getFullYear();
+            const hasPost = isValid
               ? posts.some((p) => {
                   if (!p.scheduledFor) return false;
-                  return new Date(p.scheduledFor).getDate() === date;
+                  const d = new Date(p.scheduledFor);
+                  return (
+                    d.getFullYear() === calYear &&
+                    d.getMonth() === calMonth &&
+                    d.getDate() === dayNum
+                  );
                 })
               : false;
-            const isToday = date === today;
             return (
               <div
                 key={i}
-                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm cursor-pointer transition-colors
-                  ${!date ? "opacity-0 pointer-events-none" : ""}
+                onClick={() => isValid && router.push("/dashboard/calendar")}
+                className={`aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-colors
+                  ${!isValid ? "opacity-0 pointer-events-none" : "cursor-pointer"}
                   ${isToday ? "bg-purple-600 text-white font-bold" : "hover:bg-white/5 text-gray-300"}
                 `}
               >
-                {date && (
+                {isValid && (
                   <>
-                    <span>{date}</span>
+                    <span>{dayNum}</span>
                     {hasPost && (
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1" />
                     )}
@@ -148,7 +192,7 @@ export default function DashboardPage() {
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Connected Accounts</h2>
-            <button className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
+            <button onClick={() => router.push("/dashboard/accounts")} className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
               + Add Account
             </button>
           </div>
@@ -201,7 +245,7 @@ export default function DashboardPage() {
         <div className="glass-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Upcoming Scheduled Posts</h2>
-            <button className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
+            <button onClick={() => router.push("/dashboard/scheduled")} className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
               View All
             </button>
           </div>
