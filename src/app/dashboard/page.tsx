@@ -15,8 +15,8 @@ export default function DashboardPage() {
   useEffect(() => {
     Promise.all([getAccounts(), getPosts()])
       .then(([accs, ps]) => {
-        setAccounts(accs);
-        setPosts(ps);
+        setAccounts(Array.isArray(accs) ? accs : []);
+        setPosts(Array.isArray(ps) ? ps : []);
       })
       .catch(() => {
         // leave empty on error — empty states are shown below
