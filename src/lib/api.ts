@@ -76,7 +76,8 @@ export async function getMe(): Promise<User> {
 
 export async function getAccounts(): Promise<Account[]> {
   const res = await api.get("/api/accounts");
-  return res.data.data;
+  const data = res.data.data;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createAccount(
@@ -102,7 +103,8 @@ export async function deleteAccount(id: string): Promise<void> {
 
 export async function getPosts(): Promise<Post[]> {
   const res = await api.get("/api/posts");
-  return res.data.data;
+  const data = res.data.data;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createPost(data: Partial<Post>): Promise<Post> {
@@ -126,7 +128,8 @@ export async function deletePost(id: string): Promise<void> {
 
 export async function getSchedules(): Promise<Schedule[]> {
   const res = await api.get("/api/schedules");
-  return res.data.data;
+  const data = res.data.data;
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createSchedule(
