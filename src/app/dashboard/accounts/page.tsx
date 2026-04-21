@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAccounts, createAccount, deleteAccount, Account } from "@/lib/api";
+import { getAccounts, deleteAccount, Account } from "@/lib/api";
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [username, setUsername] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
   function fetchAccounts() {
     setLoading(true);
@@ -22,23 +18,6 @@ export default function AccountsPage() {
   useEffect(() => {
     fetchAccounts();
   }, []);
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!username.trim()) return;
-    setSaving(true);
-    setError("");
-    try {
-      await createAccount({ username: username.trim() });
-      setUsername("");
-      setShowForm(false);
-      fetchAccounts();
-    } catch {
-      setError("Failed to add account. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  }
 
   async function handleDelete(id: string) {
     try {
@@ -61,54 +40,24 @@ export default function AccountsPage() {
         </div>
         <button
           onClick={() => {
-            setShowForm(true);
-            setError("");
+            window.location.href =
+              "https://creator-tok-backend.vercel.app/api/tiktok/login";
           }}
-          className="btn-primary text-sm"
+          className="flex items-center gap-2 bg-black hover:bg-zinc-900 text-white text-sm font-semibold px-4 py-2 rounded-lg border border-white/10 transition-colors"
         >
-          + Add Account
+          {/* TikTok logo */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="w-4 h-4"
+            aria-hidden="true"
+          >
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
+          </svg>
+          Sign in with TikTok
         </button>
       </div>
-
-      {/* Add Account Form */}
-      {showForm && (
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold mb-4">Connect a TikTok Account</h2>
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleAdd} className="flex gap-3">
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="TikTok username (e.g. @creator)"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {saving ? "Adding…" : "Add"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(false);
-                setError("");
-                setUsername("");
-              }}
-              className="btn-secondary text-sm"
-            >
-              Cancel
-            </button>
-          </form>
-        </div>
-      )}
 
       {/* Accounts List */}
       <div className="glass-card p-6">
@@ -118,7 +67,7 @@ export default function AccountsPage() {
           <div className="text-center py-12">
             <div className="text-4xl mb-4">🔗</div>
             <p className="text-gray-400 text-sm">
-              No accounts connected yet. Click &quot;+ Add Account&quot; to get started.
+              No accounts connected yet. Click &quot;Sign in with TikTok&quot; to get started.
             </p>
           </div>
         ) : (
