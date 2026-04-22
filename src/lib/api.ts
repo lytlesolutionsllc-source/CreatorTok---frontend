@@ -76,15 +76,36 @@ export async function getMe(): Promise<User> {
 
 export async function getAccounts(): Promise<Account[]> {
   const res = await api.get("/api/accounts");
-  const data = res.data.data;
-  return Array.isArray(data) ? data : [];
+  const accounts = res.data.data.accounts;
+  if (!Array.isArray(accounts)) return [];
+  return accounts.map(
+    (acc: { id: string; accountName: string; followerCount?: number; status?: string }) => ({
+      id: acc.id,
+      username: acc.accountName,
+      followersCount: acc.followerCount,
+      status: acc.status,
+    })
+  );
 }
 
 export async function createAccount(
   data: Partial<Account>
 ): Promise<Account> {
-  const res = await api.post("/api/accounts", data);
-  return res.data.data;
+  const payload = {
+    accountName: data.username,
+    accessToken: "mock_access_token",
+    refreshToken: "mock_refresh_token",
+    tokenExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+    followerCount: 0,
+  };
+  const res = await api.post("/api/accounts", payload);
+  const acc = res.data.data.account;
+  return {
+    id: acc.id,
+    username: acc.accountName,
+    followersCount: acc.followerCount,
+    status: acc.status,
+  };
 }
 
 export async function updateAccount(
@@ -103,13 +124,13 @@ export async function deleteAccount(id: string): Promise<void> {
 
 export async function getPosts(): Promise<Post[]> {
   const res = await api.get("/api/posts");
-  const data = res.data.data;
-  return Array.isArray(data) ? data : [];
+  const posts = res.data.data.posts;
+  return Array.isArray(posts) ? posts : [];
 }
 
 export async function createPost(data: Partial<Post>): Promise<Post> {
   const res = await api.post("/api/posts", data);
-  return res.data.data;
+  return res.data.data.post;
 }
 
 export async function updatePost(
@@ -128,8 +149,8 @@ export async function deletePost(id: string): Promise<void> {
 
 export async function getSchedules(): Promise<Schedule[]> {
   const res = await api.get("/api/schedules");
-  const data = res.data.data;
-  return Array.isArray(data) ? data : [];
+  const schedules = res.data.data.schedules;
+  return Array.isArray(schedules) ? schedules : [];
 }
 
 export async function createSchedule(
