@@ -40,8 +40,8 @@ export default function AccountsPage() {
         </div>
         <button
           onClick={() => {
-            window.location.href =
-              "https://creator-tok-backend.vercel.app/api/tiktok/login";
+            const token = localStorage.getItem("token");
+            window.location.href = `https://creator-tok-backend.vercel.app/api/tiktok/login?token=${token}`;
           }}
           className="flex items-center gap-2 bg-black hover:bg-zinc-900 text-white text-sm font-semibold px-4 py-2 rounded-lg border border-white/10 transition-colors"
         >
