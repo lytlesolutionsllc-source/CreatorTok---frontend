@@ -72,7 +72,7 @@ export default function DashboardPage() {
             Here&apos;s your content overview.
           </p>
         </div>
-        <button className="btn-primary text-sm" onClick={() => router.push("/dashboard/scheduled")}>+ New Post</button>
+        <button className="btn-primary text-sm" onClick={() => router.push("/dashboard/create")}>+ New Post</button>
       </div>
 
       {/* Stats Row */}

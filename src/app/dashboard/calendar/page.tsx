@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getPosts, Post } from "@/lib/api";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -20,6 +21,7 @@ function getDaysInMonth(year: number, month: number) {
 }
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const today = new Date();
@@ -80,7 +82,7 @@ export default function CalendarPage() {
             View and manage your scheduled content.
           </p>
         </div>
-        <button className="btn-primary text-sm">+ New Post</button>
+        <button className="btn-primary text-sm" onClick={() => router.push("/dashboard/create")}>+ New Post</button>
       </div>
 
       <div className="glass-card p-6">

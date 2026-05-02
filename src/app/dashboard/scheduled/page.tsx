@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getPosts, deletePost, Post } from "@/lib/api";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -11,6 +12,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function ScheduledPage() {
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -51,7 +53,7 @@ export default function ScheduledPage() {
             View and manage all your upcoming content.
           </p>
         </div>
-        <button className="btn-primary text-sm">+ New Post</button>
+        <button className="btn-primary text-sm" onClick={() => router.push("/dashboard/create")}>+ New Post</button>
       </div>
 
       {/* Filter tabs */}
