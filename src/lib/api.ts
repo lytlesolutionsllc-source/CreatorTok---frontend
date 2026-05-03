@@ -39,6 +39,16 @@ export interface Post {
   status?: string;
   scheduledFor?: string;
   accountId?: string;
+  imageUrl?: string;
+  musicId?: string;
+}
+
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artist?: string;
+  coverUrl?: string;
+  previewUrl?: string;
 }
 
 export interface Schedule {
@@ -143,6 +153,40 @@ export async function updatePost(
 
 export async function deletePost(id: string): Promise<void> {
   await api.delete(`/api/posts/${id}`);
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────
+
+export async function generateImage(
+  prompt: string
+): Promise<{ imageUrl: string }> {
+  const res = await api.post("/api/images/generate", { prompt });
+  return res.data.data;
+}
+
+export async function uploadImage(
+  file: File
+): Promise<{ imageUrl: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await api.post("/api/images/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
+}
+
+// ── Music ──────────────────────────────────────────────────────────────────
+
+export async function getTrendingMusic(): Promise<MusicTrack[]> {
+  const res = await api.get("/api/music/trending");
+  const tracks = res.data.data?.tracks ?? res.data.data;
+  return Array.isArray(tracks) ? tracks : [];
+}
+
+export async function getFavoritesMusic(): Promise<MusicTrack[]> {
+  const res = await api.get("/api/music/favorites");
+  const tracks = res.data.data?.tracks ?? res.data.data;
+  return Array.isArray(tracks) ? tracks : [];
 }
 
 // ── Schedules ──────────────────────────────────────────────────────────────
